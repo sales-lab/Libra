@@ -22,12 +22,12 @@
 #'   Defaults to \code{3}.
 #' @param min_reps the minimum number of replicates in a cell type to retain it.
 #'   Defaults to \code{2}.
-#' @param min_features the minimum number of expressing cells (or replicates) 
-#'   for a gene to retain it. Defaults to \code{0}.   
+#' @param min_features the minimum number of expressing cells (or replicates)
+#'   for a gene to retain it. Defaults to \code{0}.
 #' @param de_family the differential expression/accessibility family to use. Available options
 #' are:
 #' \itemize{
-#' \item{"singlecell"}: 
+#' \item{"singlecell"}:
 #' For single cell differential expression (DE) methods, uses traditionally methods implemented by Seurat to
 #' test for DE genes. These methods do not take biological replicate into account. There are \code{six} options
 #' for \code{de_method} that can be used, while no input for \code{de_test} is required:
@@ -119,7 +119,7 @@
 #' \item{"TFIDF"}: Only for scATAC-seq
 #' }
 #' @param binarization binarization for single-cell ATAC-seq only
-#' @param latent_vars latent variables for single-cell Seurat/Signac based methods. 
+#' @param latent_vars latent variables for single-cell Seurat/Signac based methods.
 #' @param n_threads number of threads to use for parallelization in mixed models.
 #'
 #' @return a data frame containing differential expression results with the
@@ -165,7 +165,10 @@ run_de = function(input,
                   binarization = FALSE,
                   latent_vars = NULL,
                   n_threads = 2) {
-  
+
+  if (de_method != "edgeR")
+    stop("no method other than edgeR is supported by this version of the package")
+
   # first, make sure inputs are correct
   inputs = check_inputs(
     input = input,
@@ -188,19 +191,19 @@ run_de = function(input,
       tmp_stats = Seurat::FoldChange(sc, label1_barcodes, label2_barcodes, base=exp(1)) %>%
           mutate(gene = rownames(.)) %>%
           set_rownames(NULL) %>%
-          dplyr::select(gene, avg_logFC, pct.1, pct.2)
+          dplyr::select(gene, pct.1, pct.2)
       mean_expr = data.frame(
           gene = names(label1_mean_expr),
           exp1 = label1_mean_expr,
           exp2 = label2_mean_expr
       )
-      out_stats %<>% rbind(tmp_stats %>% 
+      out_stats %<>% rbind(tmp_stats %>%
           dplyr::left_join(mean_expr, by='gene') %>%
           mutate(cell_type = ct) %>%
           dplyr::relocate(cell_type, .before=gene)
       )
   }
-  
+
   # run differential expression
   DE = switch(de_family,
               pseudobulk = pseudobulk_de(
@@ -274,7 +277,7 @@ run_de = function(input,
     mutate(p_val_adj = p.adjust(p_val, method = 'BH')) %>%
     # make sure gene is a character not a factor
     mutate(gene = as.character(gene)) %>%
-    dplyr::select(cell_type, gene, p_val, p_val_adj, de_family, de_method, de_type) %>%
+    dplyr::select(cell_type, gene, avg_logFC, p_val, p_val_adj, de_family, de_method, de_type) %>%
     dplyr::left_join(out_stats, by = c('gene', 'cell_type')) %>%
     dplyr::select(cell_type,
                   gene,
@@ -297,7 +300,7 @@ run_de = function(input,
       !!paste0(label_levels[1], '.pct') := pct.1,
       !!paste0(label_levels[2], '.pct') := pct.2
     )
-    
+
     if (input_type == 'scATAC') {
       DE %<>%
           dplyr::rename(
