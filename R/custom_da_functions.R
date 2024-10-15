@@ -1,6 +1,3 @@
-library(lmtest)
-library(parallel)
-
 fisher_exact_helper = function(temp, compar1_barcodes) {
   temp[temp>0]=1
   temp = data.frame('count'=temp, 'barcode'=names(temp)) %>%
@@ -8,16 +5,16 @@ fisher_exact_helper = function(temp, compar1_barcodes) {
   temp = table(temp[,c('count', 'label')])
   if (nrow(temp) > 1){
     res = fisher.test(temp)
-    return (c(res$p.value, res$estimate))    
+    return (c(res$p.value, res$estimate))
   }
   else
     return(c(NA,NA))
 }
-  
+
 get_fisher_exact_pval = function(mat, compar1_barcodes, compar2_barcodes){
   mat = mat[rowSums(mat) > 0,]
   # res_df = data.frame(t(apply(mat, 1, fisher_exact_helper, compar1_barcodes=compar1_barcodes)))
-  res_df = mclapply(1:nrow(mat), mc.cores=16, function(x){
+  res_df = parallel::mclapply(1:nrow(mat), mc.cores=16, function(x){
     fisher_exact_helper(mat[x,], compar1_barcodes)
   })
   res_df = data.frame(do.call(rbind, res_df))
@@ -45,7 +42,7 @@ get_binomial_pval = function(mat, compar1_barcodes, compar2_barcodes){
   mat[mat>0] = 1
   mat1 = mat[,compar1_barcodes]
   mat2 = mat[,compar2_barcodes]
-  
+
   n1 = ncol(mat1)
   n2 = ncol(mat2)
   s1 = rowSums(mat1)
@@ -53,7 +50,7 @@ get_binomial_pval = function(mat, compar1_barcodes, compar2_barcodes){
   m1 = s1/n1
   m2 = s2/n2
 
-  pvals = do.call(rbind, mclapply(seq_along(m1), mc.cores=16, function(x){
+  pvals = do.call(rbind, parallel::mclapply(seq_along(m1), mc.cores=16, function(x){
     if(m1[x] >= m2[x]){
       test_stat = pbinom(q = s1[x]-1, size = n1, prob = (max(c(s2[x],1))) / n2, lower.tail=FALSE, log.p = TRUE)
     }else{
@@ -83,7 +80,7 @@ get_LR_peaks_pval = function(mat, compar1_barcodes, compar2_barcodes){
 
   fmla = as.formula(object = "GENE ~ group")
   fmla2 = as.formula(object = "GENE ~ 1")
-  pvals = do.call(rbind, mclapply(rownames(mat), mc.cores=1, function(x){
+  pvals = do.call(rbind, parallel::mclapply(rownames(mat), mc.cores=1, function(x){
     test_df = rbind(
       data.frame('GENE'=m1[x,], 'group'=0),
       data.frame('GENE'=m2[x,], 'group'=1)
@@ -91,7 +88,7 @@ get_LR_peaks_pval = function(mat, compar1_barcodes, compar2_barcodes){
 
     model1 = glm(formula = fmla, data = test_df, family = "binomial")
     model2 = glm(formula = fmla2, data = test_df, family = "binomial")
-    lrtest = lrtest(model1, model2)
+    lrtest = lmtest::lrtest(model1, model2)
     out = c(lrtest$Pr[2], lrtest$Chisq[2])
     return(out)
   }))
@@ -124,16 +121,16 @@ get_permutation_test_pval = function(mat, compar1_barcodes, compar2_barcodes){
 
   combined_barcodes = c(compar1_barcodes, compar2_barcodes)
 
-  permutations = do.call(cbind, mclapply(1:n_trials, mc.cores=ncores, function(i){
+  permutations = do.call(cbind, parallel::mclapply(1:n_trials, mc.cores=ncores, function(i){
 
     random_compar1_barcodes = sample(combined_barcodes, compar1_size)
     random_compar2_barcodes = combined_barcodes[!combined_barcodes %in% random_compar1_barcodes]
     random_m1 = mat[,random_compar1_barcodes]
     random_m2 = mat[,random_compar2_barcodes]
-    
+
     random_p1_prime = sum(rowSums(random_m1 > 0))
     random_p2_prime = sum(rowSums(random_m2 > 0))
-    
+
     m1_random_means = rowMeans(random_m1 > 0)
     m2_random_means = rowMeans(random_m2 > 0)
     random_test_stats = (m1_random_means/random_p1_prime) - (m2_random_means/random_p2_prime)
@@ -195,7 +192,7 @@ da_function_wrapper = function(mat, meta, da_method, cell_type_name) {
         de_family = 'singlecell',
         de_method = 'fisher',
         de_type = 'singlecell'
-      ) %>% 
+      ) %>%
       left_join(logFC_df) %>%
       select(cell_type, gene, avg_logFC, test_statistic, p_val, p_val_adj, de_family, de_method, de_type)
 
@@ -211,7 +208,7 @@ da_function_wrapper = function(mat, meta, da_method, cell_type_name) {
         de_family = 'snapatac_findDAR',
         de_method = da_method,
         de_type = 'snapatac_findDAR'
-      ) %>% 
+      ) %>%
       dplyr::rename(p_val = PValue) %>%
       dplyr::rename(avg_logFC = logFC) %>%
       select(cell_type, gene, avg_logFC, test_statistic, p_val, p_val_adj, de_family, de_method, de_type)
@@ -224,7 +221,7 @@ da_function_wrapper = function(mat, meta, da_method, cell_type_name) {
         de_family = 'singlecell',
         de_method = 'binomial',
         de_type = 'singlecell'
-      ) %>% 
+      ) %>%
       left_join(logFC_df) %>%
       select(cell_type, gene, avg_logFC, test_statistic, p_val, p_val_adj, de_family, de_method, de_type)
   } else if (da_method == 'LR_peaks'){
@@ -236,7 +233,7 @@ da_function_wrapper = function(mat, meta, da_method, cell_type_name) {
           de_family = 'singlecell',
           de_method = 'LR_peaks',
           de_type = 'singlecell'
-        ) %>% 
+        ) %>%
         left_join(logFC_df) %>%
         select(cell_type, gene, avg_logFC, test_statistic, p_val, p_val_adj, de_family, de_method, de_type)
     } else if (da_method == 'permutation'){
@@ -248,7 +245,7 @@ da_function_wrapper = function(mat, meta, da_method, cell_type_name) {
           de_family = 'singlecell',
           de_method = 'permutation',
           de_type = 'singlecell'
-        ) %>% 
+        ) %>%
         left_join(logFC_df) %>%
         select(cell_type, gene, avg_logFC, test_statistic, p_val, p_val_adj, de_family, de_method, de_type)
     }
