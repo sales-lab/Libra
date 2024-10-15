@@ -30,7 +30,7 @@ Libra relies on functions from the following R packages:
 	Rdpack (>= 0.7)
 ```
 
-In addition, for scRNA-seq data, the [Seurat](https://satijalab.org/seurat/), [monocle3](https://cole-trapnell-lab.github.io/monocle3/), or [SingleCellExperiment](http://bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) packages must be installed for Libra to take Seurat, monocle, SingleCellExperiment objects as input, respectively. For scATAC-seq data, the [Signac](https://stuartlab.org/signac/), [ArchR](https://www.archrproject.com/), or [snap](https://github.com/r3fang/SnapATAC) packages must be installed for Libra to take Signac, ArchR, snap objects as input, respectively. Methods that require additional packages may also require additional installs (e.g., MAST).
+In addition, for scRNA-seq data, the [Seurat](https://satijalab.org/seurat/), or [SingleCellExperiment](http://bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) packages must be installed for Libra to take Seurat, monocle, SingleCellExperiment objects as input, respectively. For scATAC-seq data, the [Signac](https://stuartlab.org/signac/), [ArchR](https://www.archrproject.com/), or [snap](https://github.com/r3fang/SnapATAC) packages must be installed for Libra to take Signac, ArchR, snap objects as input, respectively. Methods that require additional packages may also require additional installs (e.g., MAST).
 
 Libra has been tested with R version 4.2.0 and higher.
 
@@ -165,7 +165,7 @@ Libra can also run directly on a Seurat/Signac object. For a Seurat object `sc`,
 
 **Please set the `input_type` to `scATAC` when running for differential accessibility, Libra assumes the input_type to be `scRNA` by default.**
 
-The same code can be used if `sc` is a monocle3, SingleCellExperiment, Signac, ArchR or snap object instead.
+The same code can be used if `sc` is a SingleCellExperiment, Signac, ArchR or snap object instead.
 
 ## Demonstration
 

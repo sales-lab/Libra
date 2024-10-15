@@ -4,7 +4,7 @@
 #'
 #'
 #' @param input a single-cell matrix to be converted, with features (genes) in rows
-#'   and cells in columns. Alternatively, a \code{Seurat}, \code{monocole3}, or
+#'   and cells in columns. Alternatively, a \code{Seurat}, or
 #'   or \code{SingleCellExperiment} object can be directly input.
 #' @param meta the accompanying meta data whereby the rownames match the column
 #'   names of \code{input}.
@@ -46,23 +46,7 @@ check_inputs = function(input,
     cell_types = as.character(meta[[cell_type_col]])
     expr = Seurat::GetAssayData(input, slot = 'counts')
   } else if ("cell_data_set" %in% class(input)) {
-    # confirm monocle3 is installed
-    if (!requireNamespace("monocle3", quietly = TRUE)) {
-      stop("install \"monocle3\" R package for Libra compatibility with ",
-           "input monocle3 object", call. = FALSE)
-    }
-    meta = monocle3::pData(input) %>%
-      droplevels() %>%
-      as.data.frame()
-    if (!is.null(replicate_col))
-      replicates = as.character(meta[[replicate_col]])
-    if (!is.factor(meta[[label_col]])) {
-      labels = meta[[label_col]]
-    } else {
-      labels = as.character(meta[[label_col]])
-    }
-    cell_types = as.character(meta[[cell_type_col]])
-    expr = monocle3::exprs(input)
+    stop("monocle3 is not supported in this Libra version")
   } else if ("SingleCellExperiment" %in% class(input)){
     # confirm SingleCellExperiment is installed
     if (!requireNamespace("SingleCellExperiment", quietly = TRUE)) {
@@ -149,7 +133,7 @@ check_inputs = function(input,
     labels = as.character(meta[[label_col]])
     cell_types = as.character(meta[[cell_type_col]])
   }
-  
+
   # check dimensions are non-zero
   if (length(dim(expr)) != 2 || !all(dim(expr) > 0)) {
     stop("expression matrix has at least one dimension of size zero")
@@ -192,7 +176,7 @@ check_inputs = function(input,
   if (any(missing)) {
     stop("matrix contains ", sum(missing), "missing values")
   }
-  
+
   ## clean up the meta data
   if (!is.null(replicate_col)) {
     meta %<>% as.data.frame() %>%
@@ -216,7 +200,7 @@ check_inputs = function(input,
   if (!is.factor(meta$cell_type)) {
     meta$cell_type = as.factor(meta$cell_type)
   }
-  
+
   # make sure meta contains row names and is a data frame
   rownames(meta) = colnames(expr)
   meta = as.data.frame(meta)

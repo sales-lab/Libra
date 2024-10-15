@@ -1,6 +1,6 @@
 Package: Libra
 Title: Differential expression utilizing biological replicates in single-cell data
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: c(
   person("Michael", "Skinnider", email = "michael.skinnider@msl.ubc.ca",
          role = "aut"),
@@ -34,7 +34,7 @@ Imports:
 	Rdpack (>= 0.7),
 	lmtest,
 	parallel
-Suggests: knitr, monocle3, SingleCellExperiment, SummarizedExperiment
+Suggests: knitr, SingleCellExperiment, SummarizedExperiment
 VignetteBuilder: knitr
 License: GPL-3 + file LICENSE
 Encoding: UTF-8

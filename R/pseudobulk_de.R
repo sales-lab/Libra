@@ -3,7 +3,7 @@
 #' Run pseudobulk differential expression methods on single-cell data
 #' 
 #' @param input a single-cell matrix to be converted, with features (genes) in rows
-#'   and cells in columns. Alternatively, a \code{Seurat}, \code{monocle3}, or 
+#'   and cells in columns. Alternatively, a \code{Seurat}, or 
 #'   or \code{SingleCellExperiment} object can be directly input.
 #' @param meta the accompanying meta data whereby the rownames match the column
 #'   names of \code{input}.

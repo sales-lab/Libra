@@ -3,10 +3,10 @@
 #' Calculate delta variance from a single-cell matrix.
 #' 
 #' @param input a single-cell matrix to be converted, with features (genes) in rows
-#'   and cells in columns. Alternatively, a \code{Seurat}, \code{monocle3}, or 
+#'   and cells in columns. Alternatively, a \code{Seurat}, or 
 #'   or \code{SingleCellExperiment} object can be directly input.
 #' @param meta the accompanying meta data whereby the rownames match the column
-#'   names of \code{input}. If a \code{Seurat}, \code{monocle3} or
+#'   names of \code{input}. If a \code{Seurat}, or
 #'   \code{SingleCellExperiment} object is provided this can be null.
 #' @param replicate_col the vector in \code{meta} containing the replicate 
 #'   information. Defaults to \code{replicate}.

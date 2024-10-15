@@ -14,7 +14,7 @@ check_inputs(
 }
 \arguments{
 \item{input}{a single-cell matrix to be converted, with features (genes) in rows
-and cells in columns. Alternatively, a \code{Seurat}, \code{monocole3}, or
+and cells in columns. Alternatively, a \code{Seurat}, or
 or \code{SingleCellExperiment} object can be directly input.}
 
 \item{meta}{the accompanying meta data whereby the rownames match the column
