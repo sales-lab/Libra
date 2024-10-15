@@ -190,5 +190,9 @@ pseudobulk_de = function(input,
                 }
     )
   })
-  results %<>% bind_rows(.id = 'cell_type')
+
+  list(
+    pseudobulks = pseudobulks,
+    degs = bind_rows(results, .id = 'cell_type')
+  )
 }

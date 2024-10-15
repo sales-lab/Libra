@@ -46,13 +46,13 @@ Defaults to \code{3}.}
 \item{min_reps}{the minimum number of replicates in a cell type to retain it.
 Defaults to \code{2}.}
 
-\item{min_features}{the minimum number of expressing cells (or replicates) 
+\item{min_features}{the minimum number of expressing cells (or replicates)
 for a gene to retain it. Defaults to \code{0}.}
 
 \item{de_family}{the differential expression/accessibility family to use. Available options
 are:
 \itemize{
-\item{"singlecell"}: 
+\item{"singlecell"}:
 For single cell differential expression (DE) methods, uses traditionally methods implemented by Seurat to
 test for DE genes. These methods do not take biological replicate into account. There are \code{six} options
 for \code{de_method} that can be used, while no input for \code{de_test} is required:

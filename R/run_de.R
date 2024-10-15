@@ -184,28 +184,18 @@ run_de = function(input,
   sc = CreateSeuratObject(input, meta.data=meta) %>% NormalizeData(verbose = F)
   out_stats = data.frame()
   for (ct in cell_type_levels) {
-      label1_barcodes = meta %>% filter(cell_type == ct, label == label_levels[1]) %>% rownames(.)
-      label2_barcodes = meta %>% filter(cell_type == ct, label == label_levels[2]) %>% rownames(.)
-      label1_mean_expr = rowMeans(input[,label1_barcodes])
-      label2_mean_expr = rowMeans(input[,label2_barcodes])
-      tmp_stats = Seurat::FoldChange(sc, label1_barcodes, label2_barcodes, base=exp(1)) %>%
-          mutate(gene = rownames(.)) %>%
-          set_rownames(NULL) %>%
-          dplyr::select(gene, pct.1, pct.2)
-      mean_expr = data.frame(
-          gene = names(label1_mean_expr),
-          exp1 = label1_mean_expr,
-          exp2 = label2_mean_expr
-      )
-      out_stats %<>% rbind(tmp_stats %>%
-          dplyr::left_join(mean_expr, by='gene') %>%
-          mutate(cell_type = ct) %>%
-          dplyr::relocate(cell_type, .before=gene)
-      )
+    label1_barcodes = meta %>% filter(cell_type == ct, label == label_levels[1]) %>% rownames(.)
+    label2_barcodes = meta %>% filter(cell_type == ct, label == label_levels[2]) %>% rownames(.)
+    tmp_stats = Seurat::FoldChange(sc, label1_barcodes, label2_barcodes, base=exp(1)) %>%
+        mutate(cell_type = ct, gene = rownames(.)) %>%
+        set_rownames(NULL) %>%
+        dplyr::select(cell_type,
+        gene, pct.1, pct.2)
+    out_stats <- rbind(out_stats, tmp_stats)
   }
 
   # run differential expression
-  DE = switch(de_family,
+  res = switch(de_family,
               pseudobulk = pseudobulk_de(
                 input = input,
                 meta = meta,
@@ -253,6 +243,9 @@ run_de = function(input,
               )
   )
 
+  DE <- res$degs
+  pseudos <- format_pseudobulks(res$pseudobulks)
+
   # clean up the output
   suppressWarnings(
     colnames(DE) %<>%
@@ -284,8 +277,6 @@ run_de = function(input,
                   avg_logFC,
                   pct.1,
                   pct.2,
-                  exp1,
-                  exp2,
                   p_val,
                   p_val_adj,
                   de_family,
@@ -293,10 +284,9 @@ run_de = function(input,
                   de_type
     ) %>%
     ungroup() %>%
+    dplyr::left_join(pseudos, by = c("cell_type", "gene")) %>%
     arrange(cell_type, gene) %>%
     dplyr::rename(
-      !!paste0(label_levels[1], '.exp') := exp1,
-      !!paste0(label_levels[2], '.exp') := exp2,
       !!paste0(label_levels[1], '.pct') := pct.1,
       !!paste0(label_levels[2], '.pct') := pct.2
     )
@@ -310,4 +300,18 @@ run_de = function(input,
           )
     }
     DE
+}
+
+format_pseudobulks <- function(pseudobulks) {
+  pseudobulks |>
+    purrr::imap(\(ps, nm) {
+      norm <- t(t(ps) * (1e6 / colSums(ps)))
+      norm <- as.data.frame(norm)
+      colnames(norm) <- sub(":.*", "", colnames(norm))
+      norm$cell_type <- nm
+      norm$gene <- rownames(norm)
+      rownames(norm) <- NULL
+      return(norm)
+    }) |>
+    dplyr::bind_rows()
 }
