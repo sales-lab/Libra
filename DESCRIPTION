@@ -34,8 +34,7 @@ Imports:
 	Rdpack (>= 0.7),
 	lmtest,
 	parallel
-Suggests: knitr, SingleCellExperiment, SummarizedExperiment
-VignetteBuilder: knitr
+Suggests: SingleCellExperiment, SummarizedExperiment
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 RdMacros: Rdpack
