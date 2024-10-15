@@ -36,6 +36,7 @@ Imports:
 Suggests: SingleCellExperiment, SummarizedExperiment
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
+biocViews: DifferentialExpression, SingleCell
 RdMacros: Rdpack
 RoxygenNote: 7.3.2
 LazyData: true
