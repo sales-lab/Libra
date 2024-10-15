@@ -1,23 +1,23 @@
 #' Run pseudobulk differential expression methods
-#' 
+#'
 #' Run pseudobulk differential expression methods on single-cell data
-#' 
+#'
 #' @param input a single-cell matrix to be converted, with features (genes) in rows
-#'   and cells in columns. Alternatively, a \code{Seurat}, or 
+#'   and cells in columns. Alternatively, a \code{Seurat}, or
 #'   or \code{SingleCellExperiment} object can be directly input.
 #' @param meta the accompanying meta data whereby the rownames match the column
 #'   names of \code{input}.
-#' @param replicate_col the vector in \code{meta} containing the replicate 
+#' @param replicate_col the vector in \code{meta} containing the replicate
 #'   information. Defaults to \code{replicate}.
-#' @param cell_type_col the vector in \code{meta} containing the cell type 
+#' @param cell_type_col the vector in \code{meta} containing the cell type
 #'   information. Defaults to \code{cell_type}.
 #' @param label_col the vector in \code{meta} containing the experimental
-#'   label. Defaults to \code{label}. 
+#'   label. Defaults to \code{label}.
 #' @param min_cells the minimum number of cells in a cell type to retain it.
 #'   Defaults to \code{3}.
 #' @param min_reps the minimum number of replicates in a cell type to retain it.
 #'   Defaults to \code{2}.
-#' @param min_features the minimum number of expressing cells (or replicates) 
+#' @param min_features the minimum number of expressing cells (or replicates)
 #'   for a gene to retain it. Defaults to \code{0}.
 #' @param de_method the specific differential expression testing method to use.
 #'   Defaults to edgeR.
@@ -25,21 +25,21 @@
 #'   method. Defaults to LRT for edgeR, LRT for DESeq2, and trend for limma.
 #' @param input_type refers to either scRNA or scATAC
 #' @return a data frame containing differential expression results.
-#'  
+#'
 #' @importFrom magrittr %<>%
 #' @importFrom tibble rownames_to_column
 #' @importFrom dplyr %>% mutate n_distinct
 #' @importFrom edgeR DGEList calcNormFactors estimateDisp glmQLFit glmQLFTest
-#'   glmFit glmLRT topTags cpm
+#'   glmFit glmLRT topTags cpm filterByExpr
 #' @importFrom DESeq2 DESeqDataSetFromMatrix DESeq results
 #' @importFrom limma voom lmFit eBayes topTable
-#' @importFrom purrr map 
+#' @importFrom purrr map
 #' @importFrom stats model.matrix
 #' @importFrom methods new
-#' 
-#' 
-pseudobulk_de = function(input, 
-                         meta = NULL, 
+#'
+#'
+pseudobulk_de = function(input,
+                         meta = NULL,
                          replicate_col = 'replicate',
                          cell_type_col = 'cell_type',
                          label_col = 'label',
@@ -53,10 +53,10 @@ pseudobulk_de = function(input,
   if (de_method == 'limma') {
     if (de_type != 'voom') {
       # change default type to use
-      de_type = 'trend'  
+      de_type = 'trend'
     }
   }
-  
+
   # get the pseudobulks list
   pseudobulks = to_pseudobulk(
     input = input,
@@ -69,7 +69,7 @@ pseudobulk_de = function(input,
     min_features = min_features,
     external = F
   )
-  
+
   results = map(pseudobulks, function(x) {
     # create targets matrix
     targets = data.frame(group_sample = colnames(x)) %>%
@@ -82,13 +82,19 @@ pseudobulk_de = function(input,
       return(NULL)
     # create design
     design = model.matrix(~ group, data = targets)
-    
+
     DE = switch(de_method,
                 edgeR = {
                   tryCatch({
-                    y = DGEList(counts = x, group = targets$group) %>%
-                      calcNormFactors(method = 'TMM') %>%
+                    y = DGEList(counts = x, group = targets$group)
+
+                    keep <- filterByExpr(y)
+                    y <- y[keep, , keep.lib.sizes=FALSE]
+
+                    y <-
+                      calcNormFactors(y, method = 'TMM') %>%
                       estimateDisp(design)
+
                     test = switch(de_type,
                                   QLF = {
                                     fit = glmQLFit(y, design)
