@@ -1,27 +1,27 @@
 #' Create a pseudobulk matrix
-#' 
+#'
 #' Convert a single-cell expression matrix (i.e., genes by cells)
 #' to a pseudobulk matrix by summarizing counts within biological replicates
-#' 
+#'
 #' @param input a single-cell matrix to be converted, with features (genes) in rows
-#'   and cells in columns. Alternatively, a \code{Seurat}, \code{monocole3}, or 
+#'   and cells in columns. Alternatively, a \code{Seurat}, \code{monocole3}, or
 #'   or \code{SingleCellExperiment} object can be directly input.
 #' @param meta the accompanying meta data whereby the rownames match the column
 #'   names of \code{input}.
-#' @param replicate_col the vector in \code{meta} containing the replicate 
+#' @param replicate_col the vector in \code{meta} containing the replicate
 #'   information. Defaults to \code{replicate}.
-#' @param cell_type_col the vector in \code{meta} containing the cell type 
+#' @param cell_type_col the vector in \code{meta} containing the cell type
 #'   information. Defaults to \code{cell_type}.
 #' @param label_col the vector in \code{meta} containing the experimental
-#'   label. Defaults to \code{label}. 
+#'   label. Defaults to \code{label}.
 #' @param min_cells the minimum number of cells in a cell type to retain it.
 #'   Defaults to \code{3}.
 #' @param min_reps the minimum number of replicates in a cell type to retain it.
 #'   Defaults to \code{2}.
-#' @param min_features the minimum number of expressing cells (or replicates) 
+#' @param min_features the minimum number of expressing cells (or replicates)
 #'   for a gene to retain it. Defaults to \code{0}.
 #' @return a list of pseudobulk matrices, for each cell type.
-#'  
+#'
 #' @importFrom magrittr %<>% extract
 #' @importFrom dplyr %>% rename_ count group_by filter pull n_distinct distinct
 #'   summarise
@@ -29,9 +29,9 @@
 #' @importFrom Matrix rowSums colSums
 #' @importFrom stats setNames
 #' @export
-#' 
-to_pseudobulk = function(input, 
-                         meta = NULL, 
+#'
+to_pseudobulk = function(input,
+                         meta = NULL,
                          replicate_col = 'replicate',
                          cell_type_col = 'cell_type',
                          label_col = 'label',
@@ -41,8 +41,8 @@ to_pseudobulk = function(input,
                          external = T) {
   if (external) {
     # first, make sure inputs are correct
-    inputs = Libra:::check_inputs(
-      input, 
+    inputs = check_inputs(
+      input,
       meta = meta,
       replicate_col = replicate_col,
       cell_type_col = cell_type_col,
@@ -57,7 +57,7 @@ to_pseudobulk = function(input,
   meta %<>% mutate(replicate = as.character(replicate),
                    cell_type = as.character(cell_type),
                    label = as.character(label))
-  
+
   # keep only cell types with enough cells
   keep = meta %>%
     dplyr::count(cell_type, label) %>%
@@ -65,7 +65,7 @@ to_pseudobulk = function(input,
     filter(all(n >= min_cells)) %>%
     pull(cell_type) %>%
     unique()
-  
+
   # process data into gene x replicate x cell_type matrices
   pseudobulks = keep %>%
     map( ~ {
@@ -82,7 +82,7 @@ to_pseudobulk = function(input,
         pull(replicates)
       if (any(replicate_counts < min_reps))
         return(NA)
-      
+
       # process data into gene X replicate X cell_type matrice
       mm = model.matrix(~ 0 + replicate:label, data = meta0)
       mat_mm = expr0 %*% mm
@@ -96,14 +96,14 @@ to_pseudobulk = function(input,
       return(mat_mm)
     }) %>%
     setNames(keep)
-  
+
   # drop NAs
   pseudobulks %<>% magrittr::extract(!is.na(.))
-  
+
   # also filter out cell types with no retained genes
   min_dim = map(pseudobulks, as.data.frame) %>% map(nrow)
   pseudobulks %<>% magrittr::extract(min_dim > 1)
-  
+
   # also filter out types without replicates
   min_repl = map_int(pseudobulks, ~ {
     # make sure we have a data frame a not a vector
