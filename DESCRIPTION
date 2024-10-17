@@ -1,6 +1,6 @@
 Package: Libra
 Title: Differential expression utilizing biological replicates in single-cell data
-Version: 1.0.1
+Version: 1.0.0-1
 Authors@R: c(
   person("Michael", "Skinnider", email = "michael.skinnider@msl.ubc.ca",
          role = "aut"),
